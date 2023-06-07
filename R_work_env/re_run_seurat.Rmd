@@ -1,0 +1,343 @@
+---
+title: "com_bio_seurat"
+author: "Siqi Liu"
+date: "5/30/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Matrix)
+library(MatrixModels)
+library(dplyr)
+library(Seurat)
+library(patchwork)
+library(ggplot2)
+library (stringr)
+library(tidyverse)
+library(RCurl)
+library(cowplot)
+library(cluster)
+library (factoextra)
+library(leiden)
+```
+
+## R Markdown
+
+```{r}
+setwd("/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/raw_feature_bc_matrix")
+
+EpCAM.data <- Read10X(data.dir = "/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/filtered_feature_bc_matrix/")
+
+# Create Seurat object
+EpCAM <- CreateSeuratObject(counts = EpCAM.data, project = "mSG_EpCAM", save.SNN = TRUE)
+
+EpCAM
+```
+
+```{r}
+# Add number of genes per UMI for each cell to metadata
+# EpCAM$log10GenesPerUMI <- log10(EpCAM$nFeature_RNA) - log10(EpCAM$nCount_RNA) ? 
+EpCAM$log10GenesPerUMI <- log10(EpCAM$nFeature_RNA) / log10(EpCAM$nCount_RNA)
+
+# Compute percent mito ratio
+# What is the meaning of `pattern = "^mt-" ` here? 
+EpCAM$mitoRatio <- PercentageFeatureSet(object = EpCAM, pattern = "^mt-")
+EpCAM$mitoRatio <- EpCAM@meta.data$mitoRatio / 100
+
+# Create metadata dataframe
+metadata <- EpCAM@meta.data
+
+# Add cell IDs to metadata
+metadata$cells <- rownames(metadata)
+
+# Rename columns
+metadata <- metadata %>%
+  dplyr::rename(seq_folder = orig.ident,
+                nUMI = nCount_RNA,
+                nGene = nFeature_RNA)
+
+# Create sample column
+metadata$sample <- "mSG"
+
+# Create metadata dataframe
+metadata <- EpCAM@meta.data
+
+# Add cell IDs to metadata
+metadata$cells <- rownames(metadata)
+
+# Rename columns
+metadata <- metadata %>%
+  dplyr::rename(seq_folder = orig.ident,
+                nUMI = nCount_RNA,
+                nGene = nFeature_RNA)
+# Create sample column
+metadata$sample <- "mSG"
+
+# Add metadata back to Seurat object
+EpCAM@meta.data <- metadata
+```
+
+
+```{r}
+# Cell-level FILTERING
+set.seed (12)
+filtered_seurat <- subset(x = EpCAM, 
+                          subset= (nUMI >= 1) & 
+                            (nUMI <=20000) &
+                            (nGene >= 100) & 
+                            (log10GenesPerUMI > 0.5) & 
+                            (log10GenesPerUMI < 0.9) &
+                            (mitoRatio < 0.20))
+```
+
+```{r}
+# Output a logical vector for every gene on whether the more than zero counts per cell
+# Extract counts
+counts <- GetAssayData(object = filtered_seurat, slot = "counts")
+
+# Save filtered subset to new metadata
+metadata_clean <- filtered_seurat@meta.data
+```
+
+```{r}
+filtered_seurat[["percent.mt"]] <- PercentageFeatureSet(filtered_seurat, pattern = "^mt-")
+plot1 <- FeatureScatter(filtered_seurat, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(filtered_seurat, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2+ plot_layout(ncol = 1)
+
+```
+
+```{r}
+# Normalize the counts
+set.seed(12)
+filtered_seurat_norm <- SCTransform(filtered_seurat, vars.to.regress = "mitoRatio")
+
+# Check which assays are stored in objects
+filtered_seurat_norm@assays
+
+# Identification of highly variable features (feature selection)
+filtered_seurat_norm <- FindVariableFeatures(filtered_seurat_norm, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(filtered_seurat_norm), 10)
+par(plt = c(0.1, 0.9, 0.1, 0.9))
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(filtered_seurat_norm)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2+ plot_layout(ncol = 1)
+```
+
+```{r}
+# Run PCA
+set.seed (12)
+filtered_seurat_norm_PCA <- RunPCA(object = filtered_seurat_norm)
+# Plot PCA
+
+PCAPlot(filtered_seurat_norm_PCA)  
+
+# Run UMAP
+set.seed(12)
+filtered_seurat_norm_UMAP <- RunUMAP(filtered_seurat_norm_PCA, 
+                                dims = 1:15,
+                                reduction = "pca")
+# Plot UMAP                             
+DimPlot(filtered_seurat_norm_UMAP)
+```
+
+
+```{r}
+# Run t-SNE
+filtered_seurat_norm_tSNE <- RunTSNE(
+  filtered_seurat_norm_PCA, reduction = "pca",
+  assay = NULL,
+  seed.use = 12,
+  tsne.method = "Rtsne",
+  dim.embed = 2,
+  dims = 1:20,
+  reduction.key = "tSNE_")
+
+# Plot t-SNE
+TSNEPlot(filtered_seurat_norm_tSNE)
+```
+
+```{r}
+# CLUSTERING CELLS BASED ON TOP PCs (METAGENES)
+# Identify significant PCs
+DimHeatmap(filtered_seurat_norm_tSNE, 
+           dims = 1:12, 
+           cells = 500,
+           balanced = TRUE)
+```
+
+```{r warning=FALSE}
+# Printing out the most variable genes driving PCs
+print(x = filtered_seurat_norm_tSNE[["pca"]], 
+      dims = 1:12, 
+      nfeatures = 15)
+VizDimLoadings(filtered_seurat_norm_tSNE, dims = 1, reduction = "pca")
+VizDimLoadings(filtered_seurat_norm_tSNE, dims = 2, reduction = "pca")
+VizDimLoadings(filtered_seurat_norm_tSNE, dims = 3, reduction = "pca")
+# Elbow plot: threshold for identifying the majority of the variation. However, this method can be quite subjective.
+ElbowPlot(object = filtered_seurat_norm_UMAP, 
+          ndims = 40)
+
+```
+
+```{r warning=FALSE}
+# CLUSTER THE CELLS
+# Determine the K-nearest neighbor graph 
+set.seed (12)
+filtered_seurat_norm_UMAP <- FindNeighbors(object = filtered_seurat_norm_UMAP, reduction = "pca", dims = 1:15, verbose = TRUE, graph.name = "mSG")
+
+# Determine the clusters with Leiden algorithm                          
+set.seed (12)
+filtered_seurat_norm_UMAP_0.5 <- FindClusters(object = filtered_seurat_norm_UMAP, verbose = TRUE, algorithm = 4, resolution = 0.5, graph.name = "mSG")
+```
+
+```{r warning=FALSE}
+set.seed(12)
+distance_matrix <- dist(Embeddings(filtered_seurat_norm_UMAP_0.5[['umap']])[, 1:2])
+
+#Isolate cluster name
+clusters <- filtered_seurat_norm_UMAP_0.5@active.ident
+
+#Compute silhouette score for each cluster
+silhouette <- silhouette(as.numeric(clusters), dist = distance_matrix)
+filtered_seurat_norm_UMAP_0.5@meta.data$silhouette_score <- silhouette[,3]
+
+#Plot
+fviz_silhouette(silhouette, label = FALSE, print.summary = TRUE)
+
+
+```
+
+```{r}
+# Determine metrics to plot present in seurat_integrated@meta.data
+metrics <-  c("nUMI", "nGene", "mitoRatio")
+
+FeaturePlot(filtered_seurat_norm_UMAP_0.5, 
+            reduction = "umap", 
+            features = metrics,
+            pt.size = 0.4, 
+            order = TRUE,
+            min.cutoff = 'q10',
+            label = TRUE)
+```
+
+```{r warning=FALSE, include=FALSE}
+# Defining the information in the seurat object of interest
+columns <- c(paste0("PC_", 1:16),
+             "ident",
+             "UMAP_1", "UMAP_2")
+
+# Extracting this data from the seurat object
+pc_data <- FetchData(filtered_seurat_norm_UMAP_0.5, 
+                     vars = columns)
+
+# Extract the UMAP coordinates for the first 10 cells
+filtered_seurat_norm_UMAP_0.5@reductions$umap@cell.embeddings[1:10, 1:2]
+
+# Adding cluster label to center of cluster on UMAP
+umap_label <- FetchData(filtered_seurat_norm_UMAP_0.5, 
+                        vars = c("ident", "UMAP_1", "UMAP_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(UMAP_1), y=mean(UMAP_2))
+
+# Plotting a UMAP plot for each of the PCs
+map(paste0("PC_", 1:16), function(pc){
+  ggplot(pc_data, 
+         aes(UMAP_1, UMAP_2)) +
+    geom_point(aes_string(color=pc), 
+               alpha = 0.7) +
+    scale_color_gradient(guide = FALSE, 
+                         low = "grey90", 
+                         high = "blue")  +
+    geom_text(data=umap_label, 
+              aes(label=ident, x, y)) +
+    ggtitle(pc)
+}) %>% 
+  plot_grid(plotlist = .)
+
+# Examine PCA results 
+#print(filtered_seurat_norm_UMAP_0.5["pca"], dims = 1:5, nfeatures = 10)
+
+# Select the RNA counts slot to be the default assay
+DefaultAssay(filtered_seurat_norm_UMAP_0.5) <- "RNA"
+
+# Normalize RNA data for visualization purposes
+filtered_seurat_norm_UMAP_0.5_RNA <- NormalizeData(filtered_seurat_norm_UMAP_0.5, verbose = FALSE)
+
+```
+
+
+```{r Basal}
+# Basal - Cluster 8 
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Krt15", "Krt14"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+```{r ACINAR_1}
+# ACINAR  1 - Cluster 4 
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Pip", # for 1 and 2 
+                         "Scgb2b27", "Lpo", "Car6"), # for 1 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+
+```{r ACINAR2}
+# ACINAR  2 
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Pip", # for 1 and 2 
+                         "Prlr", "Smgc"), # for 2
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+
+```{r Ductal1}
+# Ductal 1 
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Klk1", 
+                         "Ngf"),
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+
+```{r Ductal2}
+# Ductal 2
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Foxi1", 
+                         "Ascl3"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+
+```{r Ductal3}
+# Ductal 3
+FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
+            reduction = "umap", 
+            features = c("Slc9a3", "Clic6"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE,
+            repel = TRUE)
+```
+
+
