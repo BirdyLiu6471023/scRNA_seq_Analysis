@@ -2,9 +2,7 @@ devtools::install_github('cole-trapnell-lab/monocle3')
 library(monocle3)
 remotes::install_github('satijalab/seurat-wrappers')
 library(SeuratWrappers)
-
-install.packages ("R.utils")
-library(R.utils)
+)
 
 #MONOCLE3 WORKFLOW --------------------
 # 1.Convert Seurat object into an object of cell dataset (cds) class 
@@ -75,16 +73,64 @@ cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- mSG.combined@red
 
 #Plot
 cds <- learn_graph(cds)
-cluster.before.traj <- plot_cells(cds, color_cells_by = "cluster", label_groups_by_cluster = F, group_label_size = 5)
+cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by_cluster = F, label_leaves=F, group_label_size = 5)
 
 cluster.before.traj
 
-ggsave("scRNAseq_mSG_UMAP_0.5_trajectory.tiff", h = 5000, w = 6000, units = "px")
+ggsave("scRNAseq_mSG.combined_trajectory.tiff", h = 5000, w = 6000, units = "px")
 
 # Order cells in pseudotime
 cds <- order_cells(cds, reduction_method = "UMAP", root_cells = colnames(cds[, clusters(cds) == 'Basal']))
-plot_cells(cds, color_cells_by = "pseudotime", label_groups_by_cluster = T,
-           label_branch_points = T, label_roots = F, label_leaves = F, graph_label_size=1.5)
+
+plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = T, label_branch_points = T, label_roots = F, label_leaves = T, graph_label_size=1.5, trajectory_graph_color = "grey", trajectory_graph_segment_size = 3, cell_size = 1.5) + theme(axis.text.x=element_text(size = 40)) + theme(axis.text.y=element_text(size = 40)) + theme(axis.title.x= element_text (size=40)) + theme(axis.title.y= element_text (size=40)) + theme(legend.title = element_text(size = 30)) + theme(legend.text = element_text(size = 30)) + theme(legend.key.size = unit(2, 'cm'))
+
+ggsave("scRNAseq_mSG.combined_pseudotime.tiff", h = 5000, w = 6000, units = "px")
 
 head(pseudotime(cds), 10)
 
+# Monocle’s graph_test() function detects genes that vary over a trajectory. This may run very slowly. Adjust the number of cores as needed
+
+cds_graph_test_results <- graph_test(cds,
+                                     neighbor_graph = "principal_graph",
+                                     cores = 4)
+
+rowData(cds)$gene_short_name <- row.names(rowData(cds))
+
+head(cds_graph_test_results, error=FALSE, message=FALSE, warning=FALSE)
+
+deg_ids <- rownames(subset(cds_graph_test_results[order(cds_graph_test_results$morans_I, decreasing = TRUE),], q_value < 0.05))
+
+plot_cells(cds,
+           genes=head(deg_ids),
+           show_trajectory_graph = FALSE,
+           label_cell_groups = FALSE,
+           label_leaves = FALSE,
+           cell_size = 1.5) + theme(text = element_text (size = 40)) + theme(legend.key.size = unit(2, 'cm'))
+
+
+ggsave("scRNAseq_mSG.combined_genes_trajectory.tiff", h = 5000, w = 6000, units = "px")
+
+colData(cds)$assigned_cell_type <- as.character(partitions(cds))
+colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type,
+                                                '1' = "Ductal 2",
+                                                '2' = "Ductal 1_1",
+                                                '3' = "Acinar 2",
+                                                '4' = "Ductal 3_1",
+                                                '5' = "Junk",
+                                                '6' = "Ductal 3_2",
+                                                '7' = "Acinar 1",
+                                                '8' = "Basal",
+                                                '9' = "Ductal 1_2",
+                                                '10' = "Mesenchymal")
+
+gene_module_df <- find_gene_modules(cds[deg_ids,], resolution=c(10^seq(-6,-1)))
+
+cell_group_df <- tibble::tibble(cell=row.names(colData(cds)), 
+                                cell_group=colData(cds)$cell.type)
+
+agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
+
+row.names(agg_mat) <- stringr::str_c("Module ", row.names(agg_mat))
+
+pheatmap::pheatmap(agg_mat,
+                   scale="column", clustering_method="ward.D2")

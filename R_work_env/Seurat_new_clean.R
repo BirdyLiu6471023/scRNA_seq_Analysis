@@ -18,7 +18,6 @@ library(leiden)
 library(igraph)
 library(doParallel)
 
-
 setwd("E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/analysis")
 
 EpCAM.data <- Read10X(data.dir = "E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/analysis/")
@@ -121,8 +120,11 @@ filtered_seurat <- subset(x = EpCAM,
                           subset= (nUMI >= 1) & 
                             (nUMI <=20000) &
                             (nGene >= 100) & 
-                            (log10GenesPerUMI > 0.8) & 
+                            (log10GenesPerUMI > 0.5) &
+                            (log10GenesPerUMI < 0.9) &
                             (mitoRatio < 0.20))
+
+View(filtered_seurat@meta.data)
 
 # Output a logical vector for every gene on whether the more than zero counts per cell
 # Extract counts
@@ -206,7 +208,8 @@ p6 <-
   ggplot(aes(x=log10GenesPerUMI)) +
   geom_density(alpha = 0.2, color = "deepskyblue", fill = "grey") +
   theme_classic() +
-  geom_vline(xintercept = 0.8, color = "tomato", lwd = 1.5)
+  geom_vline(xintercept = 0.5, color = "tomato", lwd = 1.5) +
+  geom_vline(xintercept = 0.9, color = "tomato", lwd = 1.5)
 
 #Patchwork assemble
 p1 + p2 + p3 + p4 + p5 + p6 +
@@ -223,6 +226,9 @@ ggsave("scRNAseq_mSG_filtered_counts_features_mt.tiff", h = 2000, w = 4000, unit
 set.seed(12)
 filtered_seurat_norm <- SCTransform(filtered_seurat, vars.to.regress = "mitoRatio")
 
+# Create .RData object to load at any time
+save(filtered_seurat_norm, file="E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/analysis/filtered_seurat_norm.RData")
+
 # Check which assays are stored in objects
 filtered_seurat_norm@assays
 
@@ -236,6 +242,8 @@ top10 <- head(VariableFeatures(filtered_seurat_norm), 10)
 plot1 <- VariableFeaturePlot(filtered_seurat_norm)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1 + plot2
+
+ggsave("scRNAseq_mSG_top10_genes.tiff", h = 5000, w = 7000, units = "px")
 
 # Run PCA
 set.seed (12)
@@ -252,13 +260,14 @@ filtered_seurat_norm_UMAP <- RunUMAP(filtered_seurat_norm_PCA,
 DimPlot(filtered_seurat_norm_UMAP)
 
 # Run t-SNE
+set.seed(12)
 filtered_seurat_norm_tSNE <- RunTSNE(
   filtered_seurat_norm_PCA, reduction = "pca",
   assay = NULL,
   seed.use = 12,
   tsne.method = "Rtsne",
   dim.embed = 2,
-  dims = 1:20,
+  dims = 1:15,
   reduction.key = "tSNE_")
 
 # Plot t-SNE
@@ -266,16 +275,16 @@ TSNEPlot(filtered_seurat_norm_tSNE)
 
 # CLUSTERING CELLS BASED ON TOP PCs (METAGENES)
 # Identify significant PCs
-DimHeatmap(filtered_seurat_norm_tSNE, 
+DimHeatmap(filtered_seurat_norm_UMAP, 
            dims = 1:12, 
            cells = 500, 
            balanced = TRUE)
 
 # Printing out the most variable genes driving PCs
-print(x = filtered_seurat_norm_tSNE[["pca"]], 
+print(x = filtered_seurat_norm_UMAP[["pca"]], 
       dims = 1:12, 
       nfeatures = 15)
-VizDimLoadings(filtered_seurat_norm_tSNE, dims = 1:3, reduction = "pca")
+VizDimLoadings(filtered_seurat_norm_UMAP, dims = 1:3, reduction = "pca")
 
 
 # Elbow plot: threshold for identifying the majority of the variation. However, this method can be quite subjective.
@@ -291,15 +300,18 @@ filtered_seurat_norm_UMAP <- FindNeighbors(object = filtered_seurat_norm_UMAP, r
 # Determine the clusters with Leiden algorithm                          
 set.seed (12)
 filtered_seurat_norm_UMAP_0.5 <- FindClusters(object = filtered_seurat_norm_UMAP, verbose = TRUE, algorithm = 4, resolution = 0.5, graph.name = "mSG")
+set.seed (12)
+filtered_seurat_norm_UMAP_0.45 <- FindClusters(object = filtered_seurat_norm_UMAP, verbose = TRUE, algorithm = 4, resolution = 0.45, graph.name = "mSG")
 
 # Explore resolutions
 filtered_seurat_norm_UMAP_0.5@meta.data %>% 
   View()
 
 # Subclustering (if needed)
-# acinar_subcluster <- FindSubCluster(filtered_seurat_norm_tSNE_0.8, cluster = "5", graph.name ="mSG", subcluster.name = "Acinar_new",  resolution = 0.4, algorithm = 4)
-# DimPlot(acinar_subcluster,
-        #reduction = "tsne", group.by = "Acinar_new", label = TRUE, label.size = 6)
+basal_subcluster <- FindSubCluster(filtered_seurat_norm_UMAP_0.5, cluster = "5", graph.name ="mSG", subcluster.name = "Acinar_new",  resolution = 0.2, algorithm = 4)
+
+DimPlot(acinar_subcluster,
+        reduction = "umap", group.by = "Acinar_new", label = TRUE, label.size = 6)
 
 # Clustering quality using SILHOUETTE plot
 #Compute distance matrix to UMAP coordinates
@@ -316,7 +328,7 @@ filtered_seurat_norm_UMAP_0.5@meta.data$silhouette_score <- silhouette[,3]
 #Plot
 fviz_silhouette(silhouette, label = FALSE, print.summary = TRUE)
 
-ggsave("scRNAseq_mSG_filtered_silhouette_0.5_dims_20.tiff", h = 2000, w = 4000, units = "px")
+ggsave("scRNAseq_mSG_filtered_silhouette_0.5_dims_15.tiff", h = 2000, w = 4000, units = "px")
 
 
 # Determine metrics to plot present in seurat_integrated@meta.data
@@ -329,6 +341,7 @@ FeaturePlot(filtered_seurat_norm_UMAP_0.5,
             order = TRUE,
             min.cutoff = 'q10',
             label = TRUE)
+            
 ggsave("scRNAseq_mSG_feature_plot_0.5.tiff", h = 5000, w = 7000, units = "px")
 
 # Defining the information in the seurat object of interest
@@ -342,6 +355,7 @@ pc_data <- FetchData(filtered_seurat_norm_UMAP_0.5,
 
 # Extract the UMAP coordinates for the first 10 cells
 filtered_seurat_norm_UMAP_0.5@reductions$umap@cell.embeddings[1:10, 1:2]
+
 
 # Adding cluster label to center of cluster on UMAP
 umap_label <- FetchData(filtered_seurat_norm_UMAP_0.5, 
@@ -378,17 +392,17 @@ filtered_seurat_norm_UMAP_0.5_RNA <- NormalizeData(filtered_seurat_norm_UMAP_0.5
 # Visualize BASAL+ACINAR cluster-specific markers expression with UMAP
 FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
             reduction = "umap", 
-            features = c("Actb", "Krt15", "Bhlha15", "Aqp5", "Pip", "Smgc", "Scgb2b27", "Prlr", "Mki67", "Lpo"), 
+            features = c("Actb", "Krt15", "Bhlha15", "Aqp5", "Pip", "Smgc", "Scgb2b27", "Prlr", "Mki67", "Lpo", "Acta2"), 
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
             repel = TRUE)
-ggsave("scRNAseq_mSG_UMAP_acinar_PC_0.5.tiff", h = 5000, w = 4500, units = "px")
+ggsave("scRNAseq_mSG_UMAP_acinar_PC_0.5.tiff", h = 5000, w = 8000, units = "px")
 
 # Visualize BASAL+ACINAR cluster-specific markers expression with violin plots
-VlnPlot(filtered_seurat_norm_UMAP_0.5_RNA, features = c("Krt15", "Bhlha15", "Aqp5", "Pip", "Smgc", "Scgb2b27", "Prlr", "Mki67", "Lpo"))
+VlnPlot(filtered_seurat_norm_UMAP_0.5_RNA, features = c("Krt15", "Bhlha15", "Aqp5", "Pip", "Smgc", "Scgb2b27", "Prlr", "Mki67", "Lpo", "Acta2"))
 
-ggsave("scRNAseq_mSG_vln_acinar_PC_0.5.tiff", h = 4000, w = 5500, units = "px")
+ggsave("scRNAseq_mSG_vln_acinar_PC_0.5.tiff", h = 5000, w = 8000, units = "px")
 
 # Visualize DUCTAL cluster-specific markers expression with UMAP
 FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA, 
@@ -397,17 +411,19 @@ FeaturePlot(filtered_seurat_norm_UMAP_0.5_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE)
-ggsave("scRNAseq_mSG_UMAP_ductal_PC_0.5.tiff", h = 5000, w = 4500, units = "px")
+ggsave("scRNAseq_mSG_UMAP_ductal_PC_0.5.tiff", h = 5000, w = 7000, units = "px")
 
 # Visualize DUCTAL cluster-specific markers expression with violin plots
 VlnPlot(filtered_seurat_norm_UMAP_0.5_RNA, features = c("Krt7", "Klk1", "Ngf", "Bsnd", "Ascl3", "Kit", "Elf5", "Clic6"))
 
-ggsave("scRNAseq_mSG_vln_ductal_PC_0.5.tiff", h = 5000, w = 5500, units = "px")
+ggsave("scRNAseq_mSG_vln_ductal_PC_0.5.tiff", h = 5000, w = 7000, units = "px")
 
 
 #identification of each cluster-specific marker
+
 set.seed (12)
-cluster1.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 1, logfc.threshold = 0.1)
+cluster1.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 1, logfc.threshold = 0.25)
+
 write.csv2 (cluster1.markers, file = "cluster1_markers_0.5.csv")
 
 set.seed (12)
@@ -446,26 +462,31 @@ cluster8.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 8, logf
 write.csv2 (cluster8.markers, file = "cluster8_markers_0.5.csv")
 
 set.seed (12)
-cluster9.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 9, logfc.threshold = 0.25)
-
+cluster9.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 9, logfc.threshold = 0.1)
 write.csv2 (cluster9.markers, file = "cluster9_markers_0.5.csv")
+
+set.seed (12)
+cluster10.markers <- FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = 10, logfc.threshold = 0.1)
+write.csv2 (cluster10.markers, file = "cluster10_markers_0.5.csv")
 
 
 # Assign name to clusters
-mSG.combined <- RenameIdents(filtered_seurat_norm_0.5, `1` = "Ductal 2/Ionocytes", `2` = "Ductal 1", `3` = "Ductal 3", `4` = "Acinar 1?", `5` = "Acinar 2", `6` = "?", `7` = "Basal", `8` = "Mesenchymal?", `9` = "junk?")
+mSG.combined <- RenameIdents(filtered_seurat_norm_UMAP_0.5, `1` = "Ductal 2", `2` = "Ductal 1_1", `3` = "Acinar 2", `4` = "Ductal 3_1", `5` = "Junk", `6` = "Ductal 3_2", `7` = "Acinar 1", `8` = "Basal", `9` = "Ductal 1_2", `10` = "Mesenchymal")
+save(mSG.combined, file="E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/analysis/filtered_seurat_norm.RData")
 
 # Find differentially expressed markers among two specific clusters
-FindMarkers(filtered_seurat_norm_0.3, ident.1 = "0", ident.2 = "Ductal 1")
+FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = "4", ident.2 = "6")
 
 # Find differentially expressed markers among one cluster and all the others
-FindMarkers(filtered_seurat_norm_0.5, ident.1 = "7", ident.2 = NULL, only.pos = TRUE)
+FindMarkers(filtered_seurat_norm_UMAP_0.5, ident.1 = "10", ident.2 = NULL, only.pos = TRUE)
 
 # Plot UMAP with cluster names
-DimPlot(mSG.combined, label = TRUE)
-ggsave("scRNAseq_mSG_UMAP_0.5.tiff", h = 5000, w = 6000, units = "px")
+DimPlot(mSG.combined, label = TRUE, label.size = 8)
+ggsave("scRNAseq_mSG_UMAP_0.5_annotated.tiff", h = 5000, w = 6000, units = "px")
 
-markers.to.plot <- c("Tspan33", "Gpc6", "Slc13a2", "Slc9a3", "Esp4", "Gjb2", "Car2", "Ceacam1", "Elf5", "Kit", "Trp53i11", "Slc4a11", "Stap1", "Hepacam2", "Ascl3", "Nrip3", "Foxi1", "Rcan2", "Aldh1a3", "Clcnkb", "Igfbp5", "Esrrg", "Ccdc141", "Ngf", "Scgb1c1", "Adamts2", "Slc2a4", "Kcnj16", "Kcnj15", "Hsd11b1", "Krt19", "F5", "Duox2", "Duoxa2", "Sptssb", "Muc1", "Pcolce", "Tacstd2", "St3gal1", "Pigr", "Cd44", "Frmpd1os", "Kcnn4", "Folr1", "Agt", "Oit1", "Lpo", "Snhg18", "Esp8", "Etv1", "Gjb1", "Creb3l1", "Slc12a8", "Bhlha15", "Snca", "Lman1l", "Prlr", "Gdpd1", "Serpinb11", "Gm44410", "Tll1", "Tmem59l", "Dcdc2a", "Gm26917", "Lars2", "Kctd12" , "Mafb", "Cracr2a")
+markers.to.plot <- c("Tspan33", "Gpc6", "Slc13a2", "Slc9a3", "Esp4", "Gjb2", "Car2", "Ceacam1", "Elf5", "Kit", "Trp53i11", "Slc4a11", "Stap1", "Hepacam2", "Ascl3", "Nrip3", "Foxi1", "Rcan2", "Aldh1a3", "Clcnkb", "Igfbp5", "Esrrg", "Ccdc141", "Ngf", "Scgb1c1", "Adamts2", "Slc2a4", "Krt14", "Krt5", "Ptn", "Col4a1", "Robo2", "Il18r1", "Pdpn", "Clca3a1", "Wnt10b", "Tg", "St3gal1", "Pigr", "Cd44", "Frmpd1os", "Kcnn4", "Folr1", "Agt", "Oit1", "Lpo", "Snhg18", "Esp8", "Etv1", "Gjb1", "Creb3l1", "Slc12a8", "Bhlha15", "Snca", "Lman1l", "Prlr", "Gdpd1", "Serpinb11", "Gm44410", "Tll1", "Tmem59l", "Dcdc2a", "Gm26917", "Lars2", "Kctd12" , "Mafb", "Cracr2a")
 
-DotPlot(mSG.combined, features = rev(markers.to.plot), cols = c("deepskyblue", "coral1"), dot.scale = 12) + FontSize(x.text = 25, y.text = 25, x.title =30, y.title = 30) + RotatedAxis()
+DotPlot(mSG.combined, features = rev(markers.to.plot), cols = c("deepskyblue", "coral1"), dot.scale = 10) + FontSize(x.text = 15, y.text = 15, x.title =25, y.title = 25) + RotatedAxis()
 
 ggsave("scRNAseq_mSG_dotplot_genes_0.5.tiff", h = 5000, w = 8000, units = "px")
+
