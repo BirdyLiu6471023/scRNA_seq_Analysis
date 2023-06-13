@@ -6,7 +6,6 @@ library(SeuratWrappers)
 
 #MONOCLE3 WORKFLOW --------------------
 
-
 # loading the Rdata: filtered_seurat_norm.RData
 mSG.combined <- get(load("/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/filtered_feature_bc_matrix/filtered_seurat_norm.RData"))
 
@@ -40,12 +39,16 @@ cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by
 cluster.before.traj
 #ggsave("scRNAseq_mSG.combined_trajectory.tiff", h = 5000, w = 6000, units = "px")
 
-# Order cells in pseudotime
+#============================Order cells in pseudotime==========================
+
 set.seed (12)
 cds <- order_cells(cds, reduction_method = "UMAP", root_cells = colnames(cds[, cds@clusters@listData[["UMAP"]][["clusters"]] == 'Basal']))
 plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = T, label_branch_points = T, label_roots = F, label_leaves = T, graph_label_size=1.5, trajectory_graph_color = "grey")
 #ggsave("scRNAseq_mSG.combined_pseudotime.tiff", h = 5000, w = 6000, units = "px")
 
+
+
+#===========plot the aggregate module scores within each group of cell==========
 
 # Monocle’s graph_test() function detects genes that vary over a trajectory. This may run very slowly. Adjust the number of cores as needed
 set.seed (12)
@@ -85,7 +88,8 @@ row.names(agg_mat) <- stringr::str_c("Module ", row.names(agg_mat))
 pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2", fontsize = 5)
 
 
-# KEGG pathway over-representation analysis
+#===================KEGG pathway over-representation analysis ==================
+
 # https://yulab-smu.top/biomedical-knowledge-mining-book/clusterprofiler-kegg.html
 library(clusterProfiler)
 library(org.Mm.eg.db)
