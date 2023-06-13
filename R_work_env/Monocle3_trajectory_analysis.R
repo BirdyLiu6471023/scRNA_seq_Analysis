@@ -2,66 +2,28 @@ devtools::install_github('cole-trapnell-lab/monocle3')
 library(monocle3)
 remotes::install_github('satijalab/seurat-wrappers')
 library(SeuratWrappers)
-)
+
 
 #MONOCLE3 WORKFLOW --------------------
-# 1.Convert Seurat object into an object of cell dataset (cds) class 
-cds<- as.cell_data_set(S.obj)
-cds
-#to get cell metadata
-colData(cds)
-#to get gene data
-fData(cds)
-rownames(fData(cds)) [1:10]
-fData(cds)$gene_short_name <- rownames(fData(cds)
-#to get counts
-counts(cds)
 
-#2.Cluster cells using UMAP info from Seurat
-#assign partitions
-recreate.partition <-rep(1, lenght (cds@colData@rownames))
-names(recreate.partition) <- cds@colData@rownames
-recreate.partition <- as.factor(recreate.partition)
 
-cds@clusters$UMAP$partitions <- recreate.partition
+# loading the Rdata: filtered_seurat_norm.RData
+mSG.combined <- get(load("/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/filtered_feature_bc_matrix/filtered_seurat_norm.RData"))
 
-#Assign the cluster info
-list_cluster <- S.obj@active.ident
-cds@clusters$UMAP$clusters <- list_cluster
-
-#Assign UMAP coordinates - cell embeddings
-
-cds
-
-#plot
- 
-setwd("E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/filtered_feature_bc_matrix_PS050")
-cds <- load_mm_data(mat_path = "E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/filtered_feature_bc_matrix_PS050/matrix.mtx", 
-                    feature_anno_path = "E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/filtered_feature_bc_matrix_PS050/features.tsv", 
-                    cell_anno_path = "E:/Columbia/Piera lab/R/Data/RNA velocity/PS050/filtered_feature_bc_matrix_PS050/barcodes.tsv")
 # Converting Seurat obj into Monocle3 obj
 cds <- as.cell_data_set(mSG.combined)        
 ### Warning: Monocle 3 trajectories require cluster partitions, which Seurat does not calculate. Please run 'cluster_cells' on your cell_data_set object
-cluster_cells(cds)
+#cds <- cluster_cells(cds)
+#plot_cells(cds, color_cells_by = "partition")
 
-# Get cell metadata
-head(colData(cds))
-# Get feature/gene metadata
-fData(cds)
-rownames(fData(cds))[1:10]
+# Assign gene name
 fData(cds)$gene_short_name <- rownames(fData(cds))
-head(fData(cds))
-
-# Get counts 
-head(counts(cds))
 
 # Retrieve clustering information from Surat object
 ## 1. Assign partitions
 recreate.partitions <- c(rep(1, length(cds@colData@rownames)))
 names(recreate.partitions) <- cds@colData@rownames
 recreate.partitions <- as.factor(recreate.partitions)
-recreate.partitions
-
 cds@clusters@listData[["UMAP"]][["partitions"]] <- recreate.partitions
 
 ## 2. Assign cluster information
@@ -72,65 +34,81 @@ cds@clusters@listData[["UMAP"]][["clusters"]] <- list.cluster
 cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- mSG.combined@reductions$umap@cell.embeddings
 
 #Plot
+set.seed (12)
 cds <- learn_graph(cds)
-cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by_cluster = F, label_leaves=F, group_label_size = 5)
-
+cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by_cluster = F, label_leaves=F, group_label_size = 4)
 cluster.before.traj
-
-ggsave("scRNAseq_mSG.combined_trajectory.tiff", h = 5000, w = 6000, units = "px")
+#ggsave("scRNAseq_mSG.combined_trajectory.tiff", h = 5000, w = 6000, units = "px")
 
 # Order cells in pseudotime
-cds <- order_cells(cds, reduction_method = "UMAP", root_cells = colnames(cds[, clusters(cds) == 'Basal']))
+set.seed (12)
+cds <- order_cells(cds, reduction_method = "UMAP", root_cells = colnames(cds[, cds@clusters@listData[["UMAP"]][["clusters"]] == 'Basal']))
+plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = T, label_branch_points = T, label_roots = F, label_leaves = T, graph_label_size=1.5, trajectory_graph_color = "grey")
+#ggsave("scRNAseq_mSG.combined_pseudotime.tiff", h = 5000, w = 6000, units = "px")
 
-plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = T, label_branch_points = T, label_roots = F, label_leaves = T, graph_label_size=1.5, trajectory_graph_color = "grey", trajectory_graph_segment_size = 3, cell_size = 1.5) + theme(axis.text.x=element_text(size = 40)) + theme(axis.text.y=element_text(size = 40)) + theme(axis.title.x= element_text (size=40)) + theme(axis.title.y= element_text (size=40)) + theme(legend.title = element_text(size = 30)) + theme(legend.text = element_text(size = 30)) + theme(legend.key.size = unit(2, 'cm'))
-
-ggsave("scRNAseq_mSG.combined_pseudotime.tiff", h = 5000, w = 6000, units = "px")
-
-head(pseudotime(cds), 10)
 
 # Monocle’s graph_test() function detects genes that vary over a trajectory. This may run very slowly. Adjust the number of cores as needed
-
+set.seed (12)
 cds_graph_test_results <- graph_test(cds,
                                      neighbor_graph = "principal_graph",
                                      cores = 4)
 
-rowData(cds)$gene_short_name <- row.names(rowData(cds))
-
-head(cds_graph_test_results, error=FALSE, message=FALSE, warning=FALSE)
+#rowData(cds)$gene_short_name <- row.names(rowData(cds))
+# head(cds_graph_test_results, error=FALSE, message=FALSE, warning=FALSE)
 
 deg_ids <- rownames(subset(cds_graph_test_results[order(cds_graph_test_results$morans_I, decreasing = TRUE),], q_value < 0.05))
-
 plot_cells(cds,
            genes=head(deg_ids),
            show_trajectory_graph = FALSE,
            label_cell_groups = FALSE,
            label_leaves = FALSE,
-           cell_size = 1.5) + theme(text = element_text (size = 40)) + theme(legend.key.size = unit(2, 'cm'))
+           cell_size = 1.5) #+ theme(text = element_text (size = 40)) + theme(legend.key.size = unit(2, 'cm'))
+#ggsave("scRNAseq_mSG.combined_genes_trajectory.tiff", h = 5000, w = 6000, units = "px")
 
+# colData(cds)$assigned_cell_type <- as.character(partitions(cds))
 
-ggsave("scRNAseq_mSG.combined_genes_trajectory.tiff", h = 5000, w = 6000, units = "px")
+# before dimension reduction using UMAP or T-SNE or PCA, preprocess_cds 
+set.seed (12)
+cds <- preprocess_cds(cds, num_dim = 100)
 
-colData(cds)$assigned_cell_type <- as.character(partitions(cds))
-colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type,
-                                                '1' = "Ductal 2",
-                                                '2' = "Ductal 1_1",
-                                                '3' = "Acinar 2",
-                                                '4' = "Ductal 3_1",
-                                                '5' = "Junk",
-                                                '6' = "Ductal 3_2",
-                                                '7' = "Acinar 1",
-                                                '8' = "Basal",
-                                                '9' = "Ductal 1_2",
-                                                '10' = "Mesenchymal")
-
-gene_module_df <- find_gene_modules(cds[deg_ids,], resolution=c(10^seq(-6,-1)))
+set.seed(12)
+gene_module_df <- find_gene_modules(cds[deg_ids,], reduction_method = "UMAP", resolution=c(10^seq(-6,-1)))
 
 cell_group_df <- tibble::tibble(cell=row.names(colData(cds)), 
-                                cell_group=colData(cds)$cell.type)
+                                cell_group=list.cluster)
 
+set.seed(12)
 agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
 
 row.names(agg_mat) <- stringr::str_c("Module ", row.names(agg_mat))
 
-pheatmap::pheatmap(agg_mat,
-                   scale="column", clustering_method="ward.D2")
+pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2", fontsize = 5)
+
+
+# KEGG pathway over-representation analysis
+# https://yulab-smu.top/biomedical-knowledge-mining-book/clusterprofiler-kegg.html
+library(clusterProfiler)
+library(org.Mm.eg.db)
+
+# create a function to find the pathway
+# mod: the number of module you are interested in 
+# exclude: the gene name you find that not in database, the error would tell you which gene id to exclude
+pathway_analysis <- function(mod, exclude = NULL){
+  ## check if database exists: 
+  if (!exists("database")){
+    database <<- as.list(org.Mm.egALIAS2EG) 
+    print("loading database...")
+  }
+  significant_module <- subset(gene_module_df, module == mod)
+  significant_genes <-significant_module$id
+  if (!is.null(exclude)){
+    significant_genes <- significant_genes[-which(significant_genes %in% exclude)]
+  }
+  significant_ids <- unlist(unname(database[significant_genes]))
+  kk <- enrichKEGG(gene         = significant_ids,
+                   organism     = 'mmu',
+                   pvalueCutoff = 0.05)
+  return(kk)
+}
+
+
