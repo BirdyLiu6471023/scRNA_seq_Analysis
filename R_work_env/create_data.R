@@ -31,10 +31,10 @@ library(doParallel)
 
 # ========================== Where you need to modify ==========================
 # give an id for this run, so that we could distinguish the results: 
-id <- "sl06152023"
+id <- "sl06202023_res03_20000"
 
 # resolution value: 
-resolution_value <- 0.5
+resolution_value <- 0.3
 
 # where you store everything 
 based_directory <- "/Users/macbook/Desktop/SGcell_Evolution/R_work_env" 
@@ -44,6 +44,9 @@ data_path <- "/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/
 
 # if find all of biomarker and store them: 
 store_biomarkers <- TRUE
+
+# nUMI upper bound:
+nUMI_upper <- 20000
 
 # =======================Set up environment (don't look) ======================
 
@@ -118,10 +121,11 @@ EpCAM@meta.data <- metadata
 set.seed (12)
 filtered_seurat <- subset(x = EpCAM, 
                           subset= (nUMI >= 1) & 
-                            (nUMI <=100000) &
+                            (nUMI <= nUMI_upper) &
                             (nGene >= 100) & 
                             (log10GenesPerUMI > 0.5) &
                             (mitoRatio < 0.20))
+
 # Output a logical vector for every gene on whether the more than zero counts per cell
 # Extract counts
 counts <- GetAssayData(object = filtered_seurat, slot = "counts")
@@ -154,7 +158,8 @@ filtered_seurat_norm <- FindVariableFeatures(filtered_seurat_norm, selection.met
 set.seed (12)
 filtered_seurat_norm_PCA <- RunPCA(object = filtered_seurat_norm)
 # Plot PCA
-# PCAPlot(filtered_seurat_norm_PCA)  
+PCAPlot(filtered_seurat_norm_PCA, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("PCAPlot.png", h = 5000, w = 7000, units = "px")
 
 #=============================Run UMAP==========================================
 # Run UMAP
@@ -163,8 +168,8 @@ filtered_seurat_norm_UMAP <- RunUMAP(filtered_seurat_norm_PCA,
                                      dims = 1:15,
                                      reduction = "pca")
 # Plot UMAP                             
-# DimPlot(filtered_seurat_norm_UMAP)
-
+DimPlot(filtered_seurat_norm_UMAP, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("UMAPPlot.png", h = 5000, w = 7000, units = "px")
 
 # ==========================Clustering =========================================
 set.seed (12)
@@ -186,15 +191,18 @@ clusters <- filtered_seurat_norm_UMAP@active.ident
 silhouette <- silhouette(as.numeric(clusters), dist = distance_matrix)
 filtered_seurat_norm_UMAP@meta.data$silhouette_score <- silhouette[,3]
 fviz_silhouette(silhouette, label = FALSE, print.summary = TRUE)
-filename<- glue::glue("silhouette_score_{resolution_value}.tiff")
+filename<- glue::glue("silhouette_score_{resolution_value}.png")
 ggsave(filename, h = 2000, w = 4000, units = "px")
 
 
 # =================================Find BioMarker===============================
 # how many cluster:
-num_cluster <- (filtered_seurat_norm_UMAP@meta.data %>%
-  dplyr::distinct(mSG_res.0.5) %>%
-  dplyr::count())[1,1]
+
+num_cluster <- max(as.numeric(clusters))
+
+#num_cluster <- (filtered_seurat_norm_UMAP@meta.data %>%
+#  dplyr::distinct(clusters) %>%
+#  dplyr::count())[1,1]
 
 # if find and store biomarkers: 
 if (store_biomarkers){
@@ -219,8 +227,8 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
-            repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Acinar1.tiff", h = 5000, w = 8000, units = "px")
+            repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Acinar1.png", h = 5000, w = 8000, units = "px")
 
 # --------- Acinar2: Pip, Smgc, Prlr, Bhlha15 ----------------------------------
 FeaturePlot(filtered_seurat_norm_UMAP_RNA, 
@@ -229,8 +237,8 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
-            repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Acinar2.tiff", h = 5000, w = 8000, units = "px")
+            repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Acinar2.png", h = 5000, w = 8000, units = "px")
 
 #----------Ductal1: Klk1, Ngf, Clcnkb, Bsnd -----------------------------------
 FeaturePlot(filtered_seurat_norm_UMAP_RNA, 
@@ -239,8 +247,8 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
-            repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal1.tiff", h = 5000, w = 8000, units = "px")
+            repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal1.png", h = 5000, w = 8000, units = "px")
 
 #----------Ductal2:Foxi1, Ascl3,Clcnkb, Bsnd, Kit, Elf5-------------------------
 FeaturePlot(filtered_seurat_norm_UMAP_RNA, 
@@ -249,8 +257,8 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
-            repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal2.tiff", h = 5000, w = 8000, units = "px")
+            repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal2.png", h = 5000, w = 8000, units = "px")
 
 #----------Ductal3:Slc9a3, Clic6,Kit, Elf5--------------------------------------
 FeaturePlot(filtered_seurat_norm_UMAP_RNA, 
@@ -259,8 +267,8 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE,
-            repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal3.tiff", h = 5000, w = 8000, units = "px")
+            repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Ductal3.png", h = 5000, w = 8000, units = "px")
 
 
 #----------Basal: Krt14, Krt15--------------------------------------------------
@@ -270,23 +278,23 @@ FeaturePlot(filtered_seurat_norm_UMAP_RNA,
                   order = TRUE,
                   min.cutoff = 'q10', 
                   label = TRUE,
-                  repel = TRUE)
-ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Basal.tiff", h = 5000, w = 8000, units = "px")
+                  repel = TRUE, pt.size = 3, label.size = 8)
+ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Basal.png", h = 5000, w = 8000, units = "px")
 
 
 #======================= Assign Cell Type to Clusters============================
 # Create a lookup table for cluster renaming
 rename_table <- c("1" = "1",
                   "2" = "2",
-                  "3" = "Acinar2",
+                  "3" = "3",
                   "4" = "4",
                   "5" = "5",
-                  "6" = "Acinar1_1",
+                  "6" = "6",
                   "7" = "7",
                   "8" = "8",
-                  "9" = "Basal",
+                  "9" = "9",
                   "10" ="10",
-                  "11" = "Acinar1_2",
+                  "11" = "11",
                   "12" = "12",
                   "13" = "13")
 
