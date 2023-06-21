@@ -1,8 +1,11 @@
-# scRNA_seq_Analysis in R 
+# scRNA_seq_Analysis
 
-Notes for file: Monocle3_trajectory_analysis.R 
+Quality Control 
 
-Data: .../filtered_seurat_norm.RData
+PCA 
 
-KEGG pathway over-representation analysis
+UMAP
 
+Clustering 
+
+Pseudotime Analysis 
