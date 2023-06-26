@@ -58,21 +58,21 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
 
 ## cytoTrace Results
 
-**Basal**
+**Basal**\
 <img src="cytoTrace/plots/Krt15_basal_pseudotime.png" width="700">
 
-**Ductal2**
+**Ductal2**\
 <img src="cytoTrace/plots/Hepacam2_Ductal2_pseudotime.png" width="700">
 
-**Ductal3**
+**Ductal3**\
 <img src="cytoTrace/plots/Slc9a3_Ductal3_pseudotime.png" width="700">
 
-**Ductal1**
+**Ductal1**\
 <img src="cytoTrace/plots/Klk1_Ductal1_Pseudotime.png" width="700">
 
-**Acinar1**
+**Acinar1**\
 <img src="cytoTrace/plots/Car6_Acinar1_pseudotime.png" width="700">
 
-**Acinar2**
+**Acinar2**\
 <img src="cytoTrace/plots/Smgc_Acinar2_Pseudotime.png" width="700">
 
