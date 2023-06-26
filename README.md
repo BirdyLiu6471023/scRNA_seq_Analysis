@@ -3,9 +3,11 @@
 resolution 0.5, upper bound of nUMI = 20000
 Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis 
 
-## Perform QC for each cluster:
+## Quality Plots for Each Cluster:
 
 **Cluster ?** 
+
+For Cluster ?, log10GenesPerUMI is in the normal range, 0.8+, so are other filter conditions, which are all in the normal range. 
 
 ![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png)
 
@@ -13,6 +15,9 @@ Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis
 ![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_basal.png)
 
 **Cluster Acinar1** 
+
+As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.8 (the threshold for other clusters) , and there two peaks shown in plot.  
+
 ![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_acinar1.png)
 
 **Cluster Acinar2** 
