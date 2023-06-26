@@ -11,33 +11,38 @@ For Cluster ?, log10GenesPerUMI is in the normal range, 0.8+, so are other filte
 
 <img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png" width="700">
 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png)
-
 **Cluster Basal** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_basal.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_basal.png" width="700">
 
 **Cluster Acinar1** 
 
 As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.8 (the threshold for other clusters) , and there two peaks shown in plot.  
-
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_acinar1.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_acinar1.png" width="700">
 
 **Cluster Acinar2** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_acinar2.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_acinar2.png" width="700">
 
 **Cluster Ductal1** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal1.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal1.png" width="700">
 
 **Cluster Ductal2** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal2.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal2.png" width="700">
 
 **Cluster Ductal3_1** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal3_1.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal3_1.png" width="700">
 
 **Cluster Ductal3_2** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal3_2.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_ductal3_2.png" width="700">
 
 **Cluster Endothelial** 
-![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_endothelial.png)
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_endothelial.png" width="700">
+
+## Pseudotime after filtering out Endothelia cells 
+<p float="left">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_trajectory_filtered.png" width="700">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_pseudotime_filtered.png" width="700" /> 
+</p>
+
+
 
 
