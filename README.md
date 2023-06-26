@@ -1,8 +1,9 @@
-# scRNA_seq_Analysis in R 
+# scRNA_seq_Analysis
 
-Notes for file: Monocle3_trajectory_analysis.R 
+resolution 0.5, upper bound of nUMI = 20000
+Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis 
 
-Data: .../filtered_seurat_norm.RData
+1. Perform QC for each cluster:
 
-KEGG pathway over-representation analysis
+**Cluster ?** 
 
