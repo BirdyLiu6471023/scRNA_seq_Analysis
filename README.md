@@ -5,5 +5,5 @@ Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis
 
 1. Perform QC for each cluster:
 
-** Cluster ? ** 
+**Cluster ?** 
 
