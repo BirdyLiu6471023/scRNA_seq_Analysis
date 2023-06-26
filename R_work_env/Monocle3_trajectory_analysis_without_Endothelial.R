@@ -2,27 +2,98 @@
 library(monocle3)
 #remotes::install_github('satijalab/seurat-wrappers')
 library(SeuratWrappers)
+library(Matrix)
+library(MatrixModels)
+library(dplyr)
+library(Seurat)
+library(patchwork)
+library(ggplot2)
+library (stringr)
+library(tidyverse)
+library(RCurl)
+library(cowplot)
+library(cluster)
+library (factoextra)
+library (metap)
+library(ensembldb)
+library(biomaRt)
+library (kableExtra)
+library(leiden)
+library(igraph)
+library(doParallel)
 
 
 #MONOCLE3 WORKFLOW --------------------
 
 # loading the Rdata: filtered_seurat_norm.RData
 setwd("/Users/macbook/Desktop/SGcell_Evolution/R_work_env/sl06202023_20000_resolution_0.5")
-mSG.combined <- get(load("/Users/macbook/Desktop/SGcell_Evolution/R_work_env/sl06202023_20000_resolution_0.5/filtered_Rdata/filtered_seurat_norm.RData"))
+mSG.combined <- get(load("/Users/macbook/Desktop/SGcell_Evolution/R_work_env/sl06202023_20000_resolution_0.5/filtered_Rdata/filtered_seurat_norm_without_Endothelial.RData"))
+resolution_value = 0.5
 
-mSG.combined <- RenameIdents(mSG.combined, 
-                                          `1` = "Ductal2", 
-                                          `2` = "Ductal1", 
-                                          `3` = "?", 
-                                          `4` = "Ductal3_1", 
-                                          `5` = "Acinar2", 
-                                          `6` = "Ductal3_2", 
-                                          `7` = "Acinar1", 
-                                          `8` = "Basal", 
-                                          `9` = "Endothelial")
+previous_cluster_name <- mSG.combined@active.ident
+Idents(mSG.combined) <- "new_identity"
 
-#mSG.combined <- subset(mSG.combined, idents = c("Ductal2", "Ductal1", "?", "Ductal3_1", "Acinar2","Ductal3_2", "Acinar1", "Basal"))
+# =======================Remove Previous PCA and UMAP results ==================
+# Clear PCA results
+mSG.combined[["pca"]] <- NULL
 
+# Clear UMAP results
+mSG.combined[["umap"]] <- NULL
+
+# Clear clustering results
+mSG.combined[["seurat_clusters"]] <- NULL
+
+#=============================Run PCA===========================================
+# Run PCA
+set.seed (12)
+mSG.combined <- RunPCA(object = mSG.combined)
+# Plot PCA
+PCAPlot(mSG.combined, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("PCAPlot_without_Endothelial2.png", h = 5000, w = 7000, units = "px")
+
+#=============================Run UMAP==========================================
+# Run UMAP
+set.seed(12)
+mSG.combined <- RunUMAP(mSG.combined, 
+                                     dims = 1:15,
+                                     reduction = "pca")
+# Plot UMAP                             
+DimPlot(mSG.combined, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("UMAPPlot_without_Endothelial2.png", h = 5000, w = 7000, units = "px")
+
+# ==========================Clustering =========================================
+set.seed (12)
+mSG.combined <- FindNeighbors(object = mSG.combined, reduction = "pca", dims = 1:15, verbose = TRUE, graph.name = "mSG")
+
+set.seed (12)
+mSG.combined <- FindClusters(object = mSG.combined, verbose = TRUE, algorithm = 4, resolution = resolution_value, graph.name = "mSG")
+
+
+set.seed(12)
+embed_matrix <- Embeddings(mSG.combined[['umap']])
+embed_matrix <- as.matrix(embed_matrix)
+distance_matrix <- dist(embed_matrix)
+
+#Isolate cluster name
+clusters <- mSG.combined@active.ident
+
+#Compute silhouette score for each cluster
+silhouette <- silhouette(as.numeric(clusters), dist = distance_matrix)
+mSG.combined@meta.data$silhouette_score <- silhouette[,3]
+fviz_silhouette(silhouette, label = FALSE, print.summary = TRUE)
+filename<- glue::glue("silhouette_score_{resolution_value}_without_Endothelial.png")
+ggsave(filename, h = 2000, w = 4000, units = "px")
+
+
+# =======================Replot UMAP ===========================================
+DimPlot(mSG.combined, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("UMAPPlot_without_Endothelial2_reclustering.png", h = 5000, w = 7000, units = "px")
+
+mSG.combined@active.ident<-previous_cluster_name
+DimPlot(mSG.combined, pt.size = 3)+theme(text = element_text(size=30))
+ggsave("UMAPPlot_without_Endothelial2_previous_clusters.png", h = 5000, w = 7000, units = "px")
+
+# ======================pseudotime analysis=====================================
 
 # Converting Seurat obj into Monocle3 obj
 cds <- as.cell_data_set(mSG.combined)        
