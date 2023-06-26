@@ -57,5 +57,5 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
 </p>
 
 ## cytoTrace Results (need to be discussed) 
-<img src="cytoTrace/plots/Car6_Acinar1_pseudotime.pdf" width="700">
+<embed src="cytoTrace/plots/Car6_Acinar1_pseudotime.pdf" width="700">
 
