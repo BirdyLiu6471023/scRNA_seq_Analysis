@@ -31,10 +31,10 @@ library(doParallel)
 
 # ========================== Where you need to modify ==========================
 # give an id for this run, so that we could distinguish the results: 
-id <- "sl06202023_res03_20000"
+id <- "sl06202023_res05_20000"
 
 # resolution value: 
-resolution_value <- 0.3
+resolution_value <- 0.5
 
 # where you store everything 
 based_directory <- "/Users/macbook/Desktop/SGcell_Evolution/R_work_env" 
@@ -46,7 +46,7 @@ data_path <- "/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/
 store_biomarkers <- TRUE
 
 # nUMI upper bound:
-nUMI_upper <- 20000
+nUMI_upper <- 100000
 
 # =======================Set up environment (don't look) ======================
 
@@ -214,8 +214,13 @@ for (i in 1:num_cluster){
   print("file saved!")
 }}
 
-# ===============================Visualization==================================
+# ==============================Loading Data====================================
 
+
+
+
+
+# ===============================Visualization==================================
 # Normalize RNA data for visualization purposes
 set.seed(12)
 filtered_seurat_norm_UMAP_RNA <- NormalizeData(filtered_seurat_norm_UMAP, verbose = FALSE)
@@ -284,22 +289,17 @@ ggsave("plot_celltype_with_biomarkers/scRNAseq_mSG_UMAP_Basal.png", h = 5000, w 
 
 #======================= Assign Cell Type to Clusters============================
 # Create a lookup table for cluster renaming
-rename_table <- c("1" = "1",
-                  "2" = "2",
-                  "3" = "3",
-                  "4" = "4",
-                  "5" = "5",
-                  "6" = "6",
-                  "7" = "7",
-                  "8" = "8",
-                  "9" = "9",
-                  "10" ="10",
-                  "11" = "11",
-                  "12" = "12",
-                  "13" = "13")
+filtered_seurat_norm_UMAP <- RenameIdents(filtered_seurat_norm_UMAP, 
+                                          `1` = "Ductal2", 
+                                          `2` = "Ductal1", 
+                                          `3` = "?", 
+                                          `4` = "Ductal3_1", 
+                                          `5` = "Acinar2", 
+                                          `6` = "Ductal3_2", 
+                                          `7` = "Acinar1", 
+                                          `8` = "Basal", 
+                                          `9` = "Endothelial")
 
-# Rename Idents using the lookup table
-Idents(filtered_seurat_norm_UMAP) <- rename_table[Idents(filtered_seurat_norm_UMAP)]
 
 filtered_data <- glue::glue("filtered_data/filtered_seurat_norm_{resolution_value}.RData")
 save(filtered_seurat_norm_UMAP, file="filtered_Rdata/filtered_seurat_norm.RData")

@@ -1,13 +1,28 @@
-devtools::install_github('cole-trapnell-lab/monocle3')
+#devtools::install_github('cole-trapnell-lab/monocle3')
 library(monocle3)
-remotes::install_github('satijalab/seurat-wrappers')
+#remotes::install_github('satijalab/seurat-wrappers')
 library(SeuratWrappers)
 
 
 #MONOCLE3 WORKFLOW --------------------
 
 # loading the Rdata: filtered_seurat_norm.RData
-mSG.combined <- get(load("/Users/macbook/Desktop/Bio-Research\ /PS050_cellranger_count_outs/filtered_feature_bc_matrix/filtered_seurat_norm.RData"))
+setwd("/Users/macbook/Desktop/SGcell_Evolution/R_work_env/sl06202023_20000_resolution_0.5")
+mSG.combined <- get(load("/Users/macbook/Desktop/SGcell_Evolution/R_work_env/sl06202023_20000_resolution_0.5/filtered_Rdata/filtered_seurat_norm.RData"))
+
+mSG.combined <- RenameIdents(mSG.combined, 
+                                          `1` = "Ductal2", 
+                                          `2` = "Ductal1", 
+                                          `3` = "?", 
+                                          `4` = "Ductal3_1", 
+                                          `5` = "Acinar2", 
+                                          `6` = "Ductal3_2", 
+                                          `7` = "Acinar1", 
+                                          `8` = "Basal", 
+                                          `9` = "Endothelial")
+
+mSG.combined <- subset(mSG.combined, idents = c("Ductal2", "Ductal1", "?", "Ductal3_1", "Acinar2","Ductal3_2", "Acinar1", "Basal"))
+
 
 # Converting Seurat obj into Monocle3 obj
 cds <- as.cell_data_set(mSG.combined)        
@@ -35,17 +50,16 @@ cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- mSG.combined@red
 #Plot
 set.seed (12)
 cds <- learn_graph(cds)
-cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by_cluster = F, label_leaves=F, group_label_size = 4)
+cluster.before.traj <- plot_cells(cds, color_cells_by = "ident", label_groups_by_cluster = F, label_leaves=F, group_label_size = 10, cell_size = 1.5)
 cluster.before.traj
-#ggsave("scRNAseq_mSG.combined_trajectory.tiff", h = 5000, w = 6000, units = "px")
+ggsave("scRNAseq_mSG.combined_trajectory_filtered.png", h = 5000, w = 6000, units = "px")
 
 #============================Order cells in pseudotime==========================
 
 set.seed (12)
 cds <- order_cells(cds, reduction_method = "UMAP", root_cells = colnames(cds[, cds@clusters@listData[["UMAP"]][["clusters"]] == 'Basal']))
-plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = T, label_branch_points = T, label_roots = F, label_leaves = T, graph_label_size=1.5, trajectory_graph_color = "grey")
-#ggsave("scRNAseq_mSG.combined_pseudotime.tiff", h = 5000, w = 6000, units = "px")
-
+plot_cells(cds, color_cells_by = "pseudotime", group_cells_by = "cluster", label_groups_by_cluster = F, label_branch_points = F, label_roots = F, label_leaves = T, graph_label_size=5, cell_size = 2, trajectory_graph_color = "grey")
+ggsave("scRNAseq_mSG.combined_pseudotime_filtered.png", h = 5000, w = 6000, units = "px")
 
 
 #===========plot the aggregate module scores within each group of cell==========
@@ -65,8 +79,8 @@ plot_cells(cds,
            show_trajectory_graph = FALSE,
            label_cell_groups = FALSE,
            label_leaves = FALSE,
-           cell_size = 1.5) #+ theme(text = element_text (size = 40)) + theme(legend.key.size = unit(2, 'cm'))
-#ggsave("scRNAseq_mSG.combined_genes_trajectory.tiff", h = 5000, w = 6000, units = "px")
+           cell_size = 1.5) + theme(text = element_text (size = 40)) + theme(legend.key.size = unit(2, 'cm'))
+ggsave("scRNAseq_mSG.combined_genes_trajectory_filtered.png", h = 5000, w = 6000, units = "px")
 
 # colData(cds)$assigned_cell_type <- as.character(partitions(cds))
 
@@ -85,8 +99,8 @@ agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
 
 row.names(agg_mat) <- stringr::str_c("Module ", row.names(agg_mat))
 
-pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2", fontsize = 5)
-
+heatmap <- pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2", fontsize = 18)
+ggsave("gene_module_filtered.png", plot = heatmap, h = 6000, w = 4000, units = "px")
 
 #===================KEGG pathway over-representation analysis ==================
 
