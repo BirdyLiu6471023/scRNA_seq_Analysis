@@ -36,12 +36,24 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
 **Cluster Endothelial** \
 <img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_endothelial.png" width="700">
 
-## Pseudotime after filtering out Endothelia cells 
+## Pseudotime after filtering out Endothelial cells 
 <p float="left">
   <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_trajectory_filtered.png" width="700">
   <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_pseudotime_filtered.png" width="700" /> 
 </p>
 
+## Rerun-PCA,UMAP and Pseudotime after filtering out Endothelial cells
 
+**Comparison of UMAP after filtering out Endothelial cells** \
+<p float="left">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/UMAPPlot.png" width="400">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/UMAPPlot_without_Endothelial_reclustering.png" width="400" /> 
+</p>
+
+
+<p float="left">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_trajectory_filtered_reclustering.png" width="700">
+  <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_pseudotime_filtered_reclustering.png" width="700" /> 
+</p>
 
 
