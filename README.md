@@ -50,10 +50,11 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
   <img src="R_work_env/sl06202023_20000_resolution_0.5/UMAPPlot_without_Endothelial.png" width="400" /> 
 </p>
 
-
+**Pseudotime Analysis after reclustering**
 <p float="left">
   <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_trajectory_filtered_reclustering.png" width="700">
   <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_pseudotime_filtered_reclustering.png" width="700" /> 
 </p>
+
 
 
