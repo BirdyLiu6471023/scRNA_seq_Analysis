@@ -1,11 +1,9 @@
 # scRNA_seq_Analysis
 
-Quality Control 
+resolution 0.5, upper bound of nUMI = 20000
+Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis 
 
-PCA 
+1. Perform QC for each cluster:
 
-UMAP
+** Cluster ? ** 
 
-Clustering 
-
-Pseudotime Analysis 
