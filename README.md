@@ -56,6 +56,23 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
   <img src="R_work_env/sl06202023_20000_resolution_0.5/scRNAseq_mSG.combined_pseudotime_filtered_reclustering.png" width="700" /> 
 </p>
 
-## cytoTrace Results (need to be discussed) 
-<embed src="cytoTrace/plots/Car6_Acinar1_pseudotime.pdf" width="700">
+## cytoTrace Results
+
+**Basal**
+<img src="cytoTrace/plots/Krt15_basal_pseudotime.png" width="700">
+
+**Ductal2**
+<img src="cytoTrace/plots/Hepacam2_Ductal2_pseudotime.png" width="700">
+
+**Ductal3**
+<img src="cytoTrace/plots/Slc9a3_Ductal3_pseudotime.png" width="700">
+
+**Ductal1**
+<img src="cytoTrace/plots/Klk1_Ductal1_Pseudotime.png" width="700">
+
+**Acinar1**
+<img src="cytoTrace/plots/Car6_Acinar1_pseudotime.png" width="700">
+
+**Acinar2**
+<img src="cytoTrace/plots/Smgc_Acinar2_Pseudotime.png" width="700">
 
