@@ -9,7 +9,7 @@ Quality Control->PCA->UMAP->Clustering->Pseudotime Analysis
 
 For Cluster ?, log10GenesPerUMI is in the normal range, 0.8+, so are other filter conditions, which are all in the normal range. 
 
-<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png" width="500" height="300">
+<img src="R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png" width="700">
 
 ![cluster ? filter plot](R_work_env/sl06202023_20000_resolution_0.5/cluster_quality_plot/scRNAseq_mSG_filtered_quest.png)
 
