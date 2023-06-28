@@ -62,7 +62,7 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
 <img src="cytoTrace/plots/UMAP_Pseudotime_Cluster.png" width="700">
 
 **Differentiation status by phenotype**
-<img src = "cytoTrace/plots/cluster_box_plot.png" width="700">
+<img src = "cytoTrace/plots/cluster_box_plot.png" width="400">
 
 **Top (less differentiated) and bottom (more differentiated) genes correlated with CytoTRACE**
 <img src = "cytoTrace/plots/diffscore_plot.png" width = "400">
