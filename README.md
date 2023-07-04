@@ -67,21 +67,14 @@ As we discussed before, the log10GenesPerUMI for cluster Acinar1 is less than 0.
 **Top (less differentiated) and bottom (more differentiated) genes correlated with CytoTRACE**\
 <img src = "cytoTrace/plots/diffscore_plot.png" width = "400">
 
-**Basal**\
-<img src="cytoTrace/plots/Krt15_basal_pseudotime.png" width="700">
+**Fau**\
+<img src = "cytoTrace/plots/Fau.png" width = "700">
 
-**Ductal2**\
-<img src="cytoTrace/plots/Hepacam2_Ductal2_pseudotime.png" width="700">
+**Tpt1**\
+<img src = "cytoTrace/plots/Tpt1.png" width = "700">
 
-**Ductal3**\
-<img src="cytoTrace/plots/Slc9a3_Ductal3_pseudotime.png" width="700">
+**Gm26917**\
+<img src = "cytoTrace/plots/Gm26917.png" width = "700">
 
-**Ductal1**\
-<img src="cytoTrace/plots/Klk1_Ductal1_Pseudotime.png" width="700">
-
-**Acinar1**\
-<img src="cytoTrace/plots/Car6_Acinar1_pseudotime.png" width="700">
-
-**Acinar2**\
-<img src="cytoTrace/plots/Smgc_Acinar2_Pseudotime.png" width="700">
-
+**Lars2**\
+<img src="cytoTrace/plots/Lars2.png" width = "700">
