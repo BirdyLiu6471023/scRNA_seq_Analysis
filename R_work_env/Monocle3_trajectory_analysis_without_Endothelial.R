@@ -161,6 +161,7 @@ cds <- preprocess_cds(cds, num_dim = 100)
 
 set.seed(12)
 gene_module_df <- find_gene_modules(cds[deg_ids,], reduction_method = "UMAP", resolution=c(10^seq(-6,-1)))
+write.csv2 (gene_module_df, file = "gene_module_df.csv")
 
 cell_group_df <- tibble::tibble(cell=row.names(colData(cds)), 
                                 cell_group=list.cluster)
@@ -198,6 +199,13 @@ pathway_analysis <- function(mod, exclude = NULL){
                    organism     = 'mmu',
                    pvalueCutoff = 0.05)
   return(kk)
+}
+
+num_module <- max(as.numeric(gene_module_df$module))
+for (i in 1:num_module) {
+  analysis <- pathway_analysis(i)
+  filtered_data <- glue::glue('gene_module_{i}.RData')
+  save(analysis, file=filtered_data)
 }
 
 
